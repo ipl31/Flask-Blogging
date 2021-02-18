@@ -6,7 +6,7 @@ flask-caching
 Flask-FileUpload
 SQLAlchemy>=0.9.1
 Markdown
-Werkzeug
+Werkzeug<1
 blinker
 python-slugify
 shortuuid
