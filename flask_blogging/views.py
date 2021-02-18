@@ -10,7 +10,7 @@ from flask import Blueprint, current_app, render_template, request, redirect, \
     url_for, flash, make_response
 from flask_blogging.forms import BlogEditor
 import math
-from werkzeug.contrib.atom import AtomFeed
+from feedgen.feed import FeedGenerator
 import datetime
 from flask_principal import PermissionDenied
 from .signals import page_by_id_fetched, page_by_id_processed, \
@@ -343,22 +343,36 @@ def feed():
     posts = storage.get_posts(count=count, offset=None, recent=True,
                               user_id=None, tag=None, include_draft=False)
 
+    feed = FeedGenerator()
+    feed.title(
+        '%s - All Articles' % config.get("BLOGGING_SITENAME",
+                                          "Flask-Blogging"))
+    feed.link(request.url_root)
+    feed.link(request.url)
+
+    """
     feed = AtomFeed(
         '%s - All Articles' % config.get("BLOGGING_SITENAME",
                                          "Flask-Blogging"),
         feed_url=request.url, url=request.url_root, generator=None)
-
+    """
     feed_posts_fetched.send(blogging_engine.app, engine=blogging_engine,
                             posts=posts)
     if len(posts):
         for post in posts:
             blogging_engine.process_post(post, render=True)
+            entry = feed.add_entry()
+            entry.title(post["title"])
+            entry.author(post["user_name"])
+            entry.id(config.get("BLOGGING_SITEURL", "")+post["url"])
+            """
             feed.add(post["title"], ensureUtf(post["rendered_text"]),
                      content_type='html',
                      author=post["user_name"],
                      url=config.get("BLOGGING_SITEURL", "")+post["url"],
                      updated=post["last_modified_date"],
                      published=post["post_date"])
+            """
         feed_posts_processed.send(blogging_engine.app, engine=blogging_engine,
                                   feed=feed)
     response = feed.get_response()
